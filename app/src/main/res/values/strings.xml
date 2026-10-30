@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Habit Tracker</string>
+
+    <!-- Navigation -->
+    <string name="nav_today">Today</string>
+    <string name="nav_habits">Habits</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Today Screen -->
+    <string name="good_morning">Good Morning</string>
+    <string name="good_afternoon">Good Afternoon</string>
+    <string name="good_evening">Good Evening</string>
+    <string name="today_progress">Today\'s Progress</string>
+    <string name="all_done_today">All done for today! 🎉</string>
+    <string name="no_habits_yet">No habits yet</string>
+    <string name="no_habits_subtitle">Tap + to create your first habit</string>
+    <string name="completed_of">%1$d of %2$d</string>
+
+    <!-- Habits Screen -->
+    <string name="my_habits">My Habits</string>
+    <string name="active_habits">Active</string>
+    <string name="archived_habits">Archived</string>
+    <string name="no_archived_habits">No archived habits</string>
+
+    <!-- Add/Edit Habit -->
+    <string name="new_habit">New Habit</string>
+    <string name="edit_habit">Edit Habit</string>
+    <string name="habit_name">Habit name</string>
+    <string name="habit_name_placeholder">e.g., Read for 30 minutes</string>
+    <string name="habit_description">Description (optional)</string>
+    <string name="habit_description_placeholder">Why is this habit important?</string>
+    <string name="frequency">Frequency</string>
+    <string name="daily">Daily</string>
+    <string name="weekly">Weekly</string>
+    <string name="specific_days">Specific Days</string>
+    <string name="times_per_week">%1$d times per week</string>
+    <string name="color">Color</string>
+    <string name="icon">Icon</string>
+    <string name="reminder">Reminder</string>
+    <string name="set_reminder">Set Reminder</string>
+    <string name="no_reminder">No reminder</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="archive">Archive</string>
+    <string name="unarchive">Unarchive</string>
+
+    <!-- Streak -->
+    <string name="current_streak">Current Streak</string>
+    <string name="best_streak">Best Streak</string>
+    <string name="total_completions">Total Completions</string>
+    <string name="running_days">Running Days</string>
+    <string name="day_singular">day</string>
+    <string name="days_plural">days</string>
+    <string name="streak_fire">🔥 %1$d day streak!</string>
+
+    <!-- Stats Screen -->
+    <string name="statistics">Statistics</string>
+    <string name="overview">Overview</string>
+    <string name="completion_rate">Completion Rate</string>
+    <string name="this_week">This Week</string>
+    <string name="this_month">This Month</string>
+    <string name="this_year">This Year</string>
+    <string name="habit_strength">Habit Strength</string>
+    <string name="week">Week</string>
+    <string name="month">Month</string>
+    <string name="year">Year</string>
+    <string name="best_day">Best Day</string>
+    <string name="total_tracked_days">Total Tracked Days</string>
+    <string name="perfect_days">Perfect Days</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="appearance">Appearance</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="dark_mode_desc">Use dark theme</string>
+    <string name="data">Data</string>
+    <string name="export_csv">Export to CSV</string>
+    <string name="export_csv_desc">Export your habit data as a spreadsheet</string>
+    <string name="about">About</string>
+    <string name="version">Version</string>
+    <string name="about_app">About Habit Tracker</string>
+    <string name="about_description">Habit Tracker helps you build lasting habits with beautiful tracking, streaks, and insights. Stay consistent, stay motivated.</string>
+
+    <!-- Notifications -->
+    <string name="channel_reminders">Habit Reminders</string>
+    <string name="channel_reminders_desc">Reminders for your daily habits</string>
+    <string name="reminder_title">Time for your habit!</string>
+    <string name="reminder_text">Don\'t forget: %1$s</string>
+
+    <!-- General -->
+    <string name="ok">OK</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="confirm_delete_title">Delete Habit</string>
+    <string name="confirm_delete_message">Are you sure you want to delete \"%1$s\"? This will remove all history for this habit.</string>
+    <string name="habit_completed">Habit completed!</string>
+    <string name="habit_unchecked">Habit unchecked</string>
+
+    <!-- Days of week -->
+    <string name="mon">Mon</string>
+    <string name="tue">Tue</string>
+    <string name="wed">Wed</string>
+    <string name="thu">Thu</string>
+    <string name="fri">Fri</string>
+    <string name="sat">Sat</string>
+    <string name="sun">Sun</string>
+</resources>
