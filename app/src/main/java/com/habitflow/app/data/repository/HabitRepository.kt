@@ -10,6 +10,7 @@ import com.habitflow.app.util.DateUtils
 import com.habitflow.app.util.StreakCalculator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,7 +20,6 @@ class HabitRepository @Inject constructor(
     private val entryDao: HabitEntryDao
 ) {
     // ── Habits ──────────────────────────────────────────────
-
     fun getActiveHabits(): Flow<List<Habit>> = habitDao.getActiveHabits()
 
     /** Non-reactive snapshot for one-off reads. */
@@ -44,7 +44,6 @@ class HabitRepository @Inject constructor(
     suspend fun getActiveCount(): Int = habitDao.getActiveCount()
 
     // ── Entries ──────────────────────────────────────────────
-
     suspend fun toggleHabitForDate(habitId: Long, date: String): Boolean {
         val existing = entryDao.getEntry(habitId, date)
         return if (existing != null) {
@@ -69,7 +68,6 @@ class HabitRepository @Inject constructor(
     }
 
     // ── Stats & Streaks ─────────────────────────────────────
-
     suspend fun getStreakInfo(habit: Habit): StreakInfo {
         val dates = entryDao.getCompletionDatesForHabit(habit.id)
         return StreakCalculator.calculate(habit, dates)
@@ -79,6 +77,16 @@ class HabitRepository @Inject constructor(
         val today = DateUtils.today()
         val streakInfo = getStreakInfo(habit)
         val isCompletedToday = isCompletedForDate(habit.id, today)
+
+        // Check if yesterday was a scheduled day that was missed
+        val yesterday = DateUtils.format(LocalDate.now().minusDays(1))
+        val yesterdayScheduled = DateUtils.isScheduledDay(
+            yesterday, habit.frequencyType, habit.targetDays
+        )
+        val yesterdayCompleted = if (yesterdayScheduled) {
+            isCompletedForDate(habit.id, yesterday)
+        } else false
+        val yesterdayMissed = yesterdayScheduled && !yesterdayCompleted
 
         // Last 7 days completion status
         val last7Dates = DateUtils.lastNDays(7)
@@ -94,6 +102,7 @@ class HabitRepository @Inject constructor(
             habit = habit,
             streakInfo = streakInfo,
             isCompletedToday = isCompletedToday,
+            yesterdayMissed = yesterdayMissed,
             completionsThisWeek = completionsThisWeek,
             last7Days = last7Days
         )
@@ -114,9 +123,11 @@ class HabitRepository @Inject constructor(
     suspend fun getCompletionRateForRange(habit: Habit, startDate: String, endDate: String): Float {
         val start = DateUtils.parse(startDate)
         val end = DateUtils.parse(endDate)
+
         var scheduled = 0
         var completed = 0
         var cursor = start
+
         val completions = entryDao.getEntriesForRange(habit.id, startDate, endDate)
             .filter { it.value > 0 }
             .map { it.date }

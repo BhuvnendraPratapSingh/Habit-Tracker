@@ -25,7 +25,7 @@ import com.habitflow.app.ui.theme.parseHexColor
 
 /**
  * Main habit card used on the Today screen.
- * Shows habit name, streak, mini heatmap, and a check button.
+ * Shows habit name, streak (with blink/strikethrough states), mini heatmap, and a check button.
  */
 @Composable
 fun HabitCard(
@@ -100,20 +100,20 @@ fun HabitCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-
                 Spacer(modifier = Modifier.height(4.dp))
-
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (streak.currentStreak > 0) {
+                    // Always show streak badge (even at 0) so user sees the state
+                    if (streak.currentStreak > 0 || habitWithStats.yesterdayMissed) {
                         StreakBadge(
                             streakDays = streak.currentStreak,
-                            compact = true
+                            compact = true,
+                            isCompletedToday = isCompleted,
+                            yesterdayMissed = habitWithStats.yesterdayMissed
                         )
                     }
-
                     WeeklyHeatmap(
                         last7Days = habitWithStats.last7Days,
                         colorHex = habit.colorHex

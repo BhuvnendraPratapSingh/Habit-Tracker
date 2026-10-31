@@ -9,15 +9,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.*
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.habitflow.app.data.repository.HabitRepository
 import com.habitflow.app.ui.navigation.HabitFlowNavHost
 import com.habitflow.app.ui.theme.HabitFlowTheme
 import com.habitflow.app.util.Constants
 import com.habitflow.app.util.ReminderScheduler
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -38,13 +39,29 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         requestNotificationPermissionIfNeeded()
         rescheduleRemindersOnStart()
 
         setContent {
+            /**
+             * BUG-14 FIX: Dark mode follows system by default.
+             * - If the user has never toggled the switch, follow system theme.
+             * - Once they explicitly toggle it, use their preference.
+             * - Changing system dark mode in Android Settings is reflected immediately.
+             */
+            val systemDark = isSystemInDarkTheme()
+            val userHasExplicitChoice = prefs.contains(Constants.KEY_DARK_MODE)
+
             var darkMode by remember {
-                mutableStateOf(prefs.getBoolean(Constants.KEY_DARK_MODE, false))
+                mutableStateOf(
+                    if (userHasExplicitChoice) prefs.getBoolean(Constants.KEY_DARK_MODE, false)
+                    else systemDark
+                )
+            }
+
+            // React to system theme changes when no explicit user choice
+            if (!userHasExplicitChoice) {
+                darkMode = systemDark
             }
 
             HabitFlowTheme(darkTheme = darkMode) {
@@ -64,15 +81,18 @@ class MainActivity : ComponentActivity() {
             val granted = ContextCompat.checkSelfPermission(
                 this, Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
-
             if (!granted) {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
 
+    /**
+     * BUG-15 partial FIX: Uses lifecycleScope instead of unscoped CoroutineScope.
+     * Coroutine is cancelled if the Activity is destroyed.
+     */
     private fun rescheduleRemindersOnStart() {
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             val habits = repository.getHabitsWithReminders()
             ReminderScheduler.rescheduleAll(applicationContext, habits)
         }

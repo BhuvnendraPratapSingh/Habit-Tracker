@@ -1,7 +1,6 @@
 package com.habitflow.app.ui.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -11,23 +10,30 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+// ── Light Color Scheme ──────────────────────────────────────────
+// Integrates Electric Blue + Cantaloupe Orange as accents
+// while preserving the existing light palette structure.
 private val LightColorScheme = lightColorScheme(
-    primary = Lavender500,
+    primary = ElectricBlue,
     onPrimary = Color.White,
-    primaryContainer = Lavender100,
-    onPrimaryContainer = Lavender700,
+    primaryContainer = ElectricBlueLight,
+    onPrimaryContainer = ElectricBlueDark,
+
     secondary = IOSTeal,
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFE0F7FA),
     onSecondaryContainer = Color(0xFF004D56),
-    tertiary = IOSGreen,
+
+    tertiary = CantaloupeOrange,
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFD7F5E3),
-    onTertiaryContainer = Color(0xFF00391C),
+    tertiaryContainer = CantaloupeLight,
+    onTertiaryContainer = CantaloupeDark,
+
     error = ErrorRed,
     onError = Color.White,
     errorContainer = Color(0xFFFFDAD6),
     onErrorContainer = Color(0xFF410002),
+
     background = LightBackground,
     onBackground = LightTextPrimary,
     surface = LightSurface,
@@ -36,39 +42,50 @@ private val LightColorScheme = lightColorScheme(
     onSurfaceVariant = LightTextSecondary,
     outline = LightOutline,
     outlineVariant = Color(0xFFD1D1D6),
-    inverseSurface = DarkSurface,
-    inverseOnSurface = DarkTextPrimary,
-    surfaceTint = Lavender400
+    inverseSurface = SurfaceLevel1,
+    inverseOnSurface = TextPrimaryDark,
+    surfaceTint = ElectricBlue
 )
 
+// ── Dark Color Scheme ───────────────────────────────────────────
+// Uses the new design system tokens:
+//   Canvas:     MidnightBlack (#02070A)
+//   Surface L1: #0A131A  (cards, sheets)
+//   Surface L2: #121E27  (inputs, active containers)
+//   Border:     #1E313E
+//   Text:       #F3F7FA / #8B9BA8
 private val DarkColorScheme = darkColorScheme(
-    primary = Lavender400,
-    onPrimary = Lavender700,
-    primaryContainer = Lavender600,
-    onPrimaryContainer = Lavender100,
+    primary = ElectricBlue,
+    onPrimary = Color.White,
+    primaryContainer = ElectricBlueDark,
+    onPrimaryContainer = ElectricBlueLight,
+
     secondary = IOSTeal,
     onSecondary = Color(0xFF003544),
     secondaryContainer = Color(0xFF004D61),
     onSecondaryContainer = Color(0xFFB8EAFF),
-    tertiary = IOSGreen,
-    onTertiary = Color(0xFF003919),
-    tertiaryContainer = Color(0xFF005228),
-    onTertiaryContainer = Color(0xFF7CF8A1),
+
+    tertiary = CantaloupeOrange,
+    onTertiary = Color.White,
+    tertiaryContainer = CantaloupeDark,
+    onTertiaryContainer = CantaloupeLight,
+
     error = Color(0xFFFFB4AB),
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
     onErrorContainer = Color(0xFFFFDAD6),
-    background = DarkBackground,
-    onBackground = DarkTextPrimary,
-    surface = DarkSurface,
-    onSurface = DarkTextPrimary,
-    surfaceVariant = DarkSurfaceVariant,
-    onSurfaceVariant = DarkTextSecondary,
-    outline = DarkOutline,
-    outlineVariant = Color(0xFF49454F),
+
+    background = MidnightBlack,
+    onBackground = TextPrimaryDark,
+    surface = SurfaceLevel1,
+    onSurface = TextPrimaryDark,
+    surfaceVariant = SurfaceLevel2,
+    onSurfaceVariant = TextSecondaryDark,
+    outline = BorderStroke,
+    outlineVariant = Color(0xFF2A3F4E),
     inverseSurface = LightSurface,
     inverseOnSurface = LightTextPrimary,
-    surfaceTint = Lavender400
+    surfaceTint = ElectricBlue
 )
 
 @Composable

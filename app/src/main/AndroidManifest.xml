@@ -5,7 +5,9 @@
     <!-- Notifications for reminders (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Schedule exact alarms for reminders -->
+    <!-- Schedule exact alarms for habit reminders (used by ReminderScheduler).
+         API 31+: granted by default, user can revoke in Settings.
+         Code falls back to inexact alarms if revoked. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <!-- Boot completed to reschedule reminders -->

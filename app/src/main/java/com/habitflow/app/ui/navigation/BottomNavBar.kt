@@ -19,12 +19,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
  * iOS-style bottom navigation bar with smooth animations and pill indicators.
+ *
+ * BUG-20 FIX: Each nav item has proper semantics for TalkBack:
+ * - contentDescription announces "Today, tab, selected" etc.
+ * - role = Tab so screen readers treat it as a tab bar
+ * - selected state is announced
  */
 @Composable
 fun HFBottomNavBar(
@@ -52,7 +62,6 @@ fun HFBottomNavBar(
                 else MaterialTheme.colorScheme.onSurfaceVariant,
                 label = "navTint"
             )
-
             val scale by animateFloatAsState(
                 targetValue = if (isSelected) 1.1f else 1f,
                 animationSpec = spring(stiffness = Spring.StiffnessLow),
@@ -62,16 +71,21 @@ fun HFBottomNavBar(
             Column(
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "${item.label} tab"
+                        role = Role.Tab
+                        selected = isSelected
+                    }
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = null
+                        indication = null,
+                        onClickLabel = "Navigate to ${item.label}"
                     ) { onItemSelected(item) }
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    // Pill background for selected item
                     if (isSelected) {
                         Box(
                             modifier = Modifier
@@ -82,19 +96,16 @@ fun HFBottomNavBar(
                                 )
                         )
                     }
-
                     Icon(
                         imageVector = item.icon,
-                        contentDescription = item.label,
+                        contentDescription = null, // Handled by parent semantics
                         tint = tintColor,
                         modifier = Modifier
                             .size(24.dp)
                             .scale(scale)
                     )
                 }
-
                 Spacer(modifier = Modifier.height(4.dp))
-
                 Text(
                     text = item.label,
                     style = MaterialTheme.typography.labelSmall,

@@ -10,6 +10,7 @@ data class HabitWithStats(
     val habit: Habit,
     val streakInfo: StreakInfo,
     val isCompletedToday: Boolean = false,
+    val yesterdayMissed: Boolean = false,
     val completionsThisWeek: Int = 0,
     val last7Days: List<Boolean> = emptyList()   // Most recent 7 days, index 0 = 6 days ago
 )

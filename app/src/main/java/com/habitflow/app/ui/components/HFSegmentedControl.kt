@@ -15,13 +15,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 /**
  * iOS-style segmented control with animated sliding pill indicator.
+ *
+ * BUG-22 FIX: Pill width and offset are computed from the inner
+ * content area (after padding), so the pill lands exactly on each
+ * segment regardless of item count.
  */
 @Composable
 fun HFSegmentedControl(
@@ -31,6 +34,7 @@ fun HFSegmentedControl(
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(12.dp)
+    val innerPadding = 3.dp
 
     BoxWithConstraints(
         modifier = modifier
@@ -38,16 +42,17 @@ fun HFSegmentedControl(
             .height(40.dp)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(3.dp)
+            .padding(innerPadding)
     ) {
-        val itemWidth = (maxWidth - 6.dp) / items.size
+        // Available width after padding is maxWidth (BoxWithConstraints reports inner size)
+        val itemWidth = maxWidth / items.size
         val offsetX by animateDpAsState(
             targetValue = itemWidth * selectedIndex,
             animationSpec = tween(250),
             label = "segmentOffset"
         )
 
-        // Sliding indicator
+        // Sliding indicator pill
         Box(
             modifier = Modifier
                 .offset(x = offsetX)

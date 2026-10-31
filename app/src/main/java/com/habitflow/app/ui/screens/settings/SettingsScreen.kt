@@ -18,6 +18,10 @@ import androidx.compose.ui.unit.dp
 import com.habitflow.app.BuildConfig
 import com.habitflow.app.ui.components.HFCard
 
+/**
+ * BUG-23 FIX: Export and Backup buttons now show a "Coming soon" snackbar
+ * instead of doing nothing silently when tapped.
+ */
 @Composable
 fun SettingsScreen(
     darkMode: Boolean,
@@ -25,107 +29,116 @@ fun SettingsScreen(
     onPrivacyPolicy: () -> Unit = {}
 ) {
     var showAboutDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    var pendingSnackbar by remember { mutableStateOf<String?>(null) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Spacer(modifier = Modifier.statusBarsPadding())
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.displayMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        // ── Appearance ──────────────────────────────────
-        SectionHeader("Appearance")
-
-        HFCard {
-            SettingsToggleRow(
-                icon = Icons.Rounded.DarkMode,
-                title = "Dark Mode",
-                subtitle = "Use dark theme",
-                checked = darkMode,
-                onCheckedChange = onDarkModeChange
-            )
+    // Show snackbar when a "coming soon" action is tapped
+    LaunchedEffect(pendingSnackbar) {
+        pendingSnackbar?.let { message ->
+            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
+            pendingSnackbar = null
         }
+    }
 
-        // ── Data ────────────────────────────────────────
-        SectionHeader("Data")
-
-        HFCard {
-            Column {
-                SettingsClickRow(
-                    icon = Icons.Rounded.FileDownload,
-                    title = "Export to CSV",
-                    subtitle = "Export your habit data as a spreadsheet",
-                    onClick = { /* TODO: implement CSV export */ }
-                )
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 56.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-                SettingsClickRow(
-                    icon = Icons.Rounded.Backup,
-                    title = "Backup & Restore",
-                    subtitle = "Save or restore your habit data",
-                    onClick = { /* TODO: implement backup */ }
-                )
-            }
-        }
-
-        // ── Legal ───────────────────────────────────────
-        SectionHeader("Legal")
-
-        HFCard {
-            SettingsClickRow(
-                icon = Icons.Rounded.PrivacyTip,
-                title = "Privacy Policy",
-                subtitle = "How your data is handled",
-                onClick = onPrivacyPolicy
-            )
-        }
-
-        // ── About ───────────────────────────────────────
-        SectionHeader("About")
-
-        HFCard {
-            Column {
-                SettingsInfoRow(
-                    icon = Icons.Rounded.Info,
-                    title = "Version",
-                    value = BuildConfig.VERSION_NAME
-                )
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 56.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                )
-                SettingsClickRow(
-                    icon = Icons.Rounded.Description,
-                    title = "About Habit Tracker",
-                    subtitle = "Learn more about this app",
-                    onClick = { showAboutDialog = true }
-                )
-            }
-        }
-
-        // Credits
-        Text(
-            text = "Made with ❤\uFE0F by Bhuvnendra",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { scaffoldPadding ->
+        Column(
             modifier = Modifier
-                .padding(top = 16.dp)
-                .align(Alignment.CenterHorizontally)
-        )
+                .fillMaxSize()
+                .padding(scaffoldPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Spacer(modifier = Modifier.statusBarsPadding())
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Settings",
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
 
-        Spacer(modifier = Modifier.height(20.dp))
+            // ── Appearance ──────────────────────────────────────
+            SectionHeader("Appearance")
+            HFCard {
+                SettingsToggleRow(
+                    icon = Icons.Rounded.DarkMode,
+                    title = "Dark Mode",
+                    subtitle = "Use dark theme",
+                    checked = darkMode,
+                    onCheckedChange = onDarkModeChange
+                )
+            }
+
+            // ── Data ────────────────────────────────────────────
+            SectionHeader("Data")
+            HFCard {
+                Column {
+                    SettingsClickRow(
+                        icon = Icons.Rounded.FileDownload,
+                        title = "Export to CSV",
+                        subtitle = "Export your habit data as a spreadsheet",
+                        onClick = { pendingSnackbar = "CSV export coming in a future update" }
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 56.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    SettingsClickRow(
+                        icon = Icons.Rounded.Backup,
+                        title = "Backup & Restore",
+                        subtitle = "Save or restore your habit data",
+                        onClick = { pendingSnackbar = "Backup & restore coming in a future update" }
+                    )
+                }
+            }
+
+            // ── Legal ───────────────────────────────────────────
+            SectionHeader("Legal")
+            HFCard {
+                SettingsClickRow(
+                    icon = Icons.Rounded.PrivacyTip,
+                    title = "Privacy Policy",
+                    subtitle = "How your data is handled",
+                    onClick = onPrivacyPolicy
+                )
+            }
+
+            // ── About ───────────────────────────────────────────
+            SectionHeader("About")
+            HFCard {
+                Column {
+                    SettingsInfoRow(
+                        icon = Icons.Rounded.Info,
+                        title = "Version",
+                        value = BuildConfig.VERSION_NAME
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 56.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    SettingsClickRow(
+                        icon = Icons.Rounded.Description,
+                        title = "About Habit Tracker",
+                        subtitle = "Learn more about this app",
+                        onClick = { showAboutDialog = true }
+                    )
+                }
+            }
+
+            Text(
+                text = "Made with \u2764\uFE0F by Bhuvnendra",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+        }
     }
 
     if (showAboutDialog) {
@@ -174,24 +187,11 @@ private fun SettingsToggleRow(
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
+        Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(text = title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
@@ -212,30 +212,13 @@ private fun SettingsClickRow(
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
+        Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(text = title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Icon(
-            Icons.Rounded.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-        )
+        Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
     }
 }
 
@@ -251,23 +234,9 @@ private fun SettingsInfoRow(
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
+        Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
         Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Text(text = title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

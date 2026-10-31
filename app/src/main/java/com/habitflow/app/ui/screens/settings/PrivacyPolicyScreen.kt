@@ -1,4 +1,4 @@
-package com.habitflow.app.ui.screens.settings
+﻿package com.habitflow.app.ui.screens.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /**
- * Privacy policy screen — required for Play Store submission.
+ * Privacy policy screen â€” required for Play Store submission.
  * Explains that Habit Tracker stores all data locally and collects nothing.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,7 +54,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
 
             PolicySection(
                 title = "Data Storage",
-                body = "All information you enter (habit names, descriptions, completion records, and settings) is stored locally on your device using an encrypted SQLite database. No data is sent to any server, cloud service, or third party."
+                body = "All information you enter (habit names, descriptions, completion records, and settings) is stored locally on your device in a private SQLite database accessible only to this app. No data is sent to any server, cloud service, or third party."
             )
 
             PolicySection(
@@ -64,7 +64,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
 
             PolicySection(
                 title = "Permissions",
-                body = "• Notifications: Used solely to deliver habit reminders you configure.\n• Boot Completed: Used to reschedule your reminders after a device restart.\n\nNo other permissions are requested."
+                body = "â€¢ Notifications: Used solely to deliver habit reminders you configure.\nâ€¢ Boot Completed: Used to reschedule your reminders after a device restart.\n\nNo other permissions are requested."
             )
 
             PolicySection(
@@ -126,3 +126,4 @@ private fun PolicySection(title: String, body: String) {
         }
     }
 }
+

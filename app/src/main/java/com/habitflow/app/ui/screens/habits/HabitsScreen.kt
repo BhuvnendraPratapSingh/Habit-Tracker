@@ -1,4 +1,4 @@
-package com.habitflow.app.ui.screens.habits
+﻿package com.habitflow.app.ui.screens.habits
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
@@ -35,6 +35,11 @@ fun HabitsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var habitToDelete by remember { mutableStateOf<Habit?>(null) }
+
+    // BUG-13 FIX: Refresh streaks when this screen becomes visible
+    LaunchedEffect(Unit) {
+        viewModel.onScreenVisible()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -78,7 +83,7 @@ fun HabitsScreen(
                                     .padding(32.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text("✨", style = MaterialTheme.typography.displayLarge)
+                                Text("âœ¨", style = MaterialTheme.typography.displayLarge)
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
                                     text = "No active habits",
@@ -118,7 +123,7 @@ fun HabitsScreen(
                                     .padding(32.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text("📦", style = MaterialTheme.typography.displayLarge)
+                                Text("ðŸ“¦", style = MaterialTheme.typography.displayLarge)
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
                                     text = "No archived habits",
@@ -233,11 +238,11 @@ private fun HabitManageCard(
                     text = buildString {
                         append(when (habit.frequencyType) {
                             "daily" -> "Every day"
-                            "weekly" -> "${habit.frequencyValue}× per week"
+                            "weekly" -> "${habit.frequencyValue}Ã— per week"
                             "specific_days" -> "Specific days"
                             else -> "Daily"
                         })
-                        append(" • ")
+                        append(" â€¢ ")
                         append("${habitWithStats.streakInfo.totalCompletions} completions")
                     },
                     style = MaterialTheme.typography.bodySmall,
@@ -337,3 +342,5 @@ private fun ArchivedHabitCard(
         }
     }
 }
+
+

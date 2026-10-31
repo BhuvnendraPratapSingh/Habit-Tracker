@@ -6,10 +6,7 @@ import com.habitflow.app.data.db.entity.Habit
 import com.habitflow.app.data.model.HabitWithStats
 import com.habitflow.app.data.repository.HabitRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,21 +25,38 @@ class HabitsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HabitsUiState())
     val uiState: StateFlow<HabitsUiState> = _uiState.asStateFlow()
 
+    /**
+     * BUG-13 FIX: Refresh trigger so streaks update when entries change.
+     * Combined with the habits Flow — any change to either causes a reload.
+     */
+    private val refreshTrigger = MutableStateFlow(0L)
+
     init {
-        loadHabits()
+        observeActiveHabits()
+        observeArchivedHabits()
     }
 
-    private fun loadHabits() {
-        viewModelScope.launch {
-            repository.getActiveHabits().collect { activeHabits ->
-                val habitsWithStats = activeHabits.map { repository.getHabitWithStats(it) }
-                _uiState.update { it.copy(
-                    activeHabits = habitsWithStats,
-                    isLoading = false
-                ) }
-            }
-        }
+    /** Called from UI when Habits screen becomes visible. */
+    fun onScreenVisible() {
+        refreshTrigger.value = System.currentTimeMillis()
+    }
 
+    private fun observeActiveHabits() {
+        viewModelScope.launch {
+            combine(
+                repository.getActiveHabits(),
+                refreshTrigger
+            ) { habits, _ -> habits }
+                .collect { activeHabits ->
+                    val habitsWithStats = activeHabits.map { repository.getHabitWithStats(it) }
+                    _uiState.update {
+                        it.copy(activeHabits = habitsWithStats, isLoading = false)
+                    }
+                }
+        }
+    }
+
+    private fun observeArchivedHabits() {
         viewModelScope.launch {
             repository.getArchivedHabits().collect { archived ->
                 _uiState.update { it.copy(archivedHabits = archived) }
@@ -57,12 +71,14 @@ class HabitsViewModel @Inject constructor(
     fun archiveHabit(habitId: Long) {
         viewModelScope.launch {
             repository.archiveHabit(habitId)
+            refreshTrigger.value = System.currentTimeMillis()
         }
     }
 
     fun unarchiveHabit(habitId: Long) {
         viewModelScope.launch {
             repository.unarchiveHabit(habitId)
+            refreshTrigger.value = System.currentTimeMillis()
         }
     }
 

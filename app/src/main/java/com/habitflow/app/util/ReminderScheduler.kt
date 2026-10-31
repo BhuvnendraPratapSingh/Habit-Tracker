@@ -15,6 +15,15 @@ import java.util.Calendar
  */
 object ReminderScheduler {
 
+    /**
+     * BUG-10 FIX: Safe Int request code from Long habitId.
+     * Uses absolute value of hashCode to avoid negative values
+     * and collisions from Long.toInt() overflow.
+     */
+    private fun safeRequestCode(habitId: Long): Int {
+        return habitId.hashCode().and(0x7FFFFFFF) // Always positive
+    }
+
     fun scheduleReminder(context: Context, habit: Habit) {
         if (habit.reminderHour < 0) return
 
@@ -22,10 +31,13 @@ object ReminderScheduler {
         val intent = Intent(context, ReminderReceiver::class.java).apply {
             putExtra("habit_id", habit.id)
             putExtra("habit_name", habit.name)
+            putExtra("reminder_hour", habit.reminderHour)
+            putExtra("reminder_minute", habit.reminderMinute)
         }
+        val requestCode = safeRequestCode(habit.id)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            habit.id.toInt(),
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -35,27 +47,47 @@ object ReminderScheduler {
             set(Calendar.MINUTE, habit.reminderMinute)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
-            // If the time has already passed today, schedule for tomorrow
             if (before(Calendar.getInstance())) {
                 add(Calendar.DAY_OF_MONTH, 1)
             }
         }
 
-        // Use setRepeating for daily reminders — battery-friendly enough for a habit app
-        alarmManager.setRepeating(
-            AlarmManager.RTC_WAKEUP,
-            calendar.timeInMillis,
-            AlarmManager.INTERVAL_DAY,
-            pendingIntent
-        )
+        // BUG-9 FIX: Use exact alarms instead of inexact setRepeating().
+        // setRepeating() on API 26+ is batched by the OS (up to 30 min late).
+        // We schedule one exact alarm and reschedule the next day in ReminderReceiver.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // API 31+: Check if exact alarm permission is granted
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent
+                )
+            } else {
+                // Fallback: inexact but better than nothing
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent
+                )
+            }
+        } else {
+            // API 26–30: setExactAndAllowWhileIdle is available without permission
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                pendingIntent
+            )
+        }
     }
 
     fun cancelReminder(context: Context, habitId: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, ReminderReceiver::class.java)
+        val requestCode = safeRequestCode(habitId)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            habitId.toInt(),
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

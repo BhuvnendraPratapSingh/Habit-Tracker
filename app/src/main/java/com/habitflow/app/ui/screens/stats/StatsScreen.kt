@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,13 +23,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.habitflow.app.ui.components.BadgeCard
 import com.habitflow.app.ui.components.HFCard
 import com.habitflow.app.ui.components.HFSegmentedControl
 import com.habitflow.app.ui.components.getHabitIcon
@@ -51,7 +55,6 @@ fun StatsScreen(
             Column {
                 Spacer(modifier = Modifier.statusBarsPadding())
                 Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
                     text = "Statistics",
                     style = MaterialTheme.typography.displayMedium,
@@ -104,19 +107,74 @@ fun StatsScreen(
         if (state.dailyCompletions.isNotEmpty()) {
             item {
                 HFCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
                         Text(
                             text = "Daily Activity",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "${state.dailyCompletions.sumOf { it.completedCount }} completed this period",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Spacer(modifier = Modifier.height(16.dp))
-
                         CompletionBarChart(
                             data = state.dailyCompletions,
+                            selectedRange = state.selectedRange,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(160.dp)
+                                .height(180.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Badges section
+        if (state.badges.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Achievements",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = StreakGold.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = "${state.earnedBadgeCount}/${state.badges.size}",
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = StreakGold
+                        )
+                    }
+                }
+            }
+
+            // Earned badges first, then locked — horizontal scroll
+            item {
+                val sorted = state.badges.sortedByDescending { it.isEarned }
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(sorted) { badge ->
+                        BadgeCard(
+                            earnedBadge = badge,
+                            modifier = Modifier.width(130.dp)
                         )
                     }
                 }
@@ -133,7 +191,6 @@ fun StatsScreen(
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
-
             items(state.habitStats) { item ->
                 HabitStatCard(item)
             }
@@ -149,7 +206,7 @@ fun StatsScreen(
                             .padding(32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("📊", style = MaterialTheme.typography.displayLarge)
+                        Text("\uD83D\uDCCA", style = MaterialTheme.typography.displayLarge)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             "No data yet",
@@ -181,7 +238,7 @@ private fun StatMiniCard(
     HFCard(modifier = modifier) {
         Column(
             modifier = Modifier.padding(14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.Start
         ) {
             Icon(
                 imageVector = icon,
@@ -189,13 +246,14 @@ private fun StatMiniCard(
                 tint = color,
                 modifier = Modifier.size(24.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
@@ -208,26 +266,30 @@ private fun StatMiniCard(
 @Composable
 private fun CompletionBarChart(
     data: List<DayCompletion>,
+    selectedRange: Int,
     modifier: Modifier = Modifier
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
-    val textColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val insideLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+    val density = LocalDensity.current
 
-    // For yearly view, aggregate by month
-    val displayData = if (data.size > 60) {
-        data.groupBy { it.date.substring(0, 7) }  // Group by "yyyy-MM"
+    val isYearView = selectedRange == 2
+    val isWeekView = selectedRange == 0
+
+    val displayData = if (isYearView) {
+        data.groupBy { it.date.substring(0, 7) }
             .map { (month, days) ->
+                val monthLabel = days.first().dayLabel
                 DayCompletion(
                     date = month,
-                    dayLabel = days.first().dayLabel,
+                    dayLabel = monthLabel.take(3).lowercase()
+                        .replaceFirstChar { it.uppercase() },
                     completedCount = days.sumOf { it.completedCount },
                     totalHabits = days.sumOf { it.totalHabits }.coerceAtLeast(1)
                 )
             }
-    } else if (data.size > 14) {
-        // For month view, show every other day label
-        data
     } else {
         data
     }
@@ -236,34 +298,90 @@ private fun CompletionBarChart(
         it.totalHabits.coerceAtLeast(1)
     }?.toFloat() ?: 1f
 
+    val labels = displayData.map { item ->
+        when {
+            isWeekView -> item.dayLabel.take(1)
+            isYearView -> item.dayLabel
+            else -> item.dayLabel
+        }
+    }
+
     Canvas(modifier = modifier) {
-        val barWidth = (size.width / displayData.size) * 0.6f
-        val gap = (size.width / displayData.size) * 0.4f
-        val chartHeight = size.height - 24.dp.toPx()
+        val bottomLabelHeight = if (!isYearView) 20.dp.toPx() else 0f
+        val chartHeight = size.height - bottomLabelHeight
+        val barCount = displayData.size
+
+        val totalGapRatio = 0.35f
+        val barUnitWidth = size.width / (barCount + (barCount - 1) * totalGapRatio)
+        val gapWidth = barUnitWidth * totalGapRatio
+
+        val bottomLabelPaint = android.graphics.Paint().apply {
+            color = labelColor.toArgb()
+            textSize = with(density) { 10.sp.toPx() }
+            textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true
+        }
+
+        val insideLabelPaint = android.graphics.Paint().apply {
+            color = insideLabelColor.toArgb()
+            textSize = with(density) { 9.sp.toPx() }
+            textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true
+            typeface = android.graphics.Typeface.create(
+                android.graphics.Typeface.DEFAULT,
+                android.graphics.Typeface.BOLD
+            )
+        }
 
         displayData.forEachIndexed { index, item ->
-            val x = index * (barWidth + gap) + gap / 2
-            val maxBarHeight = chartHeight
+            val x = index * (barUnitWidth + gapWidth)
             val barHeight = if (maxValue > 0)
-                (item.completedCount.toFloat() / maxValue) * maxBarHeight
+                (item.completedCount.toFloat() / maxValue) * chartHeight
             else 0f
 
-            // Track
             drawRoundRect(
                 color = trackColor,
                 topLeft = Offset(x, 0f),
-                size = Size(barWidth, maxBarHeight),
-                cornerRadius = CornerRadius(barWidth / 2, barWidth / 2)
+                size = Size(barUnitWidth, chartHeight),
+                cornerRadius = CornerRadius(barUnitWidth / 2, barUnitWidth / 2)
             )
 
-            // Value bar
             if (barHeight > 0) {
                 drawRoundRect(
-                    color = primaryColor.copy(alpha = 0.8f),
-                    topLeft = Offset(x, maxBarHeight - barHeight),
-                    size = Size(barWidth, barHeight),
-                    cornerRadius = CornerRadius(barWidth / 2, barWidth / 2)
+                    color = primaryColor,
+                    topLeft = Offset(x, chartHeight - barHeight),
+                    size = Size(barUnitWidth, barHeight),
+                    cornerRadius = CornerRadius(barUnitWidth / 2, barUnitWidth / 2)
                 )
+            }
+
+            val barCenterX = x + barUnitWidth / 2
+
+            if (isYearView) {
+                val label = labels[index]
+                val textWidth = insideLabelPaint.measureText(label)
+                val textY = chartHeight - 8.dp.toPx()
+
+                drawContext.canvas.nativeCanvas.save()
+                drawContext.canvas.nativeCanvas.rotate(
+                    -90f, barCenterX, textY - textWidth / 2
+                )
+                drawContext.canvas.nativeCanvas.drawText(
+                    label, barCenterX, textY, insideLabelPaint
+                )
+                drawContext.canvas.nativeCanvas.restore()
+            } else {
+                val label = labels[index]
+                val shouldDrawLabel = when {
+                    isWeekView -> true
+                    displayData.size <= 14 -> true
+                    else -> index % 5 == 0 || index == displayData.size - 1
+                }
+                if (shouldDrawLabel) {
+                    drawContext.canvas.nativeCanvas.drawText(
+                        label, barCenterX, chartHeight + 16.dp.toPx(), bottomLabelPaint
+                    )
+                }
             }
         }
     }
@@ -285,7 +403,6 @@ private fun HabitStatCard(item: HabitStatItem) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -299,9 +416,7 @@ private fun HabitStatCard(item: HabitStatItem) {
                     modifier = Modifier.size(24.dp)
                 )
             }
-
             Spacer(modifier = Modifier.width(14.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.habit.name,
@@ -313,20 +428,17 @@ private fun HabitStatCard(item: HabitStatItem) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "🔥 ${item.streakInfo.currentStreak}d streak",
+                        text = "\uD83D\uDD25 ${item.streakInfo.currentStreak}d streak",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = " • ${item.streakInfo.totalCompletions} total",
+                        text = " \u2022 ${item.streakInfo.totalCompletions} total",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
                 Spacer(modifier = Modifier.height(8.dp))
-
-                // Progress bar
                 LinearProgressIndicator(
                     progress = { animatedRate },
                     modifier = Modifier
@@ -337,10 +449,7 @@ private fun HabitStatCard(item: HabitStatItem) {
                     strokeCap = StrokeCap.Round
                 )
             }
-
             Spacer(modifier = Modifier.width(12.dp))
-
-            // Percentage
             Text(
                 text = "${(item.completionRate * 100).roundToInt()}%",
                 style = MaterialTheme.typography.titleLarge,

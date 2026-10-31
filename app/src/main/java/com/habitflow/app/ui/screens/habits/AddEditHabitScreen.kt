@@ -376,25 +376,32 @@ fun AddEditHabitScreen(
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            // Hour selector
+                            // BUG-21 FIX: Display is always from ViewModel state (formatted).
+                            // Input is filtered to digits-only and clamped before updating VM.
+                            // No flash of invalid values — the TextField value is always the
+                            // coerced state, not the raw user input.
                             OutlinedTextField(
                                 value = state.reminderHour.toString().padStart(2, '0'),
-                                onValueChange = {
-                                    val h = it.filter { c -> c.isDigit() }.take(2).toIntOrNull() ?: 0
-                                    viewModel.updateReminder(h.coerceIn(0, 23), state.reminderMinute)
+                                onValueChange = { raw ->
+                                    val digits = raw.filter { c -> c.isDigit() }.take(2)
+                                    if (digits.isEmpty()) return@OutlinedTextField
+                                    val h = digits.toIntOrNull()?.coerceIn(0, 23) ?: return@OutlinedTextField
+                                    viewModel.updateReminder(h, state.reminderMinute)
                                 },
-                                label = { Text("Hour") },
+                                label = { Text("Hour (0-23)") },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(14.dp),
                                 singleLine = true
                             )
                             OutlinedTextField(
                                 value = state.reminderMinute.toString().padStart(2, '0'),
-                                onValueChange = {
-                                    val m = it.filter { c -> c.isDigit() }.take(2).toIntOrNull() ?: 0
-                                    viewModel.updateReminder(state.reminderHour, m.coerceIn(0, 59))
+                                onValueChange = { raw ->
+                                    val digits = raw.filter { c -> c.isDigit() }.take(2)
+                                    if (digits.isEmpty()) return@OutlinedTextField
+                                    val m = digits.toIntOrNull()?.coerceIn(0, 59) ?: return@OutlinedTextField
+                                    viewModel.updateReminder(state.reminderHour, m)
                                 },
-                                label = { Text("Minute") },
+                                label = { Text("Min (0-59)") },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(14.dp),
                                 singleLine = true

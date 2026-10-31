@@ -26,8 +26,11 @@ object DatabaseModule {
             AppDatabase::class.java,
             "habitflow_db"
         )
-            .fallbackToDestructiveMigration()
+            .addMigrations(*AppDatabase.ALL_MIGRATIONS)
             .build()
+        // NOTE: No fallbackToDestructiveMigration().
+        // If a migration is missing, the app crashes at dev time
+        // instead of silently deleting user data in production.
     }
 
     @Provides
